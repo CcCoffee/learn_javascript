@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>浏览器环境下的this的使用</title>
+</head>
+
+<body>
+    <h1>浏览器环境下的this的使用</h1>
+    <p>说明：与运行于nodejs环境下的src/this.js文件进行对比测试，表现不同之处会在注释中用❌标识</p>
+    <p>tips：vscode中使用<strong>alt+b</strong>快速使用浏览器打开html文件</p>
+    <script>
+        function foo1() {
+            console.log("======== foo1")
+            // 在普通函数中的this总是代表它的直接调用者
+            // 在默认情况下，this指的是window(浏览器环境)/global(node环境)
+            console.log(this == window, "this == window") //true
+        }
+        //❌与node表现不一致
+        //node中输出   `false 'foo1 == global.foo1'`。global.foo1为undefined
+        //浏览器中输出  `true "foo1 == window.foo1"`
+        console.log(foo1 == window.foo1, "foo1 == window.foo1")
+        foo1()
+
+        function foo2() {
+            var _this = this //根据foo1()的测试可知这里的this为window对象
+            setTimeout(function () {
+                console.log("======== foo2")
+                var inner_this = this
+                //❌与node表现不一致
+                //node中输出   false 'inner_this == global'
+                //浏览器中输出  true "inner_this == window"
+                //node中的this为Timeout对象，而浏览器中的为Window对象
+                console.log(inner_this == window, "inner_this == window")
+                console.log(this) //Window {...}
+            })
+        }
+        foo2()
+
+        // 严格模式下全局函数的this表现与非严格模式下不一致
+        // 严格模式下全局函数的this为undefined
+        // 非严格模式下全局函数的this为global
+        function foo3() {
+            'use strict'
+            console.log("======== foo3")
+            console.log(this) //undefined
+        }
+        foo3()
+    </script>
+</body>
+
+</html>
