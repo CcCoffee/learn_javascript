@@ -39,6 +39,25 @@ foo2()
 function foo3() {
     'use strict'
     console.log("======== foo3")
+    //结果与foo1()不同，因为严格来讲，foo3方法并没有定义在global/window对象中，不符合原则1.普通函数下的this为宿主对象
     console.log(this) //undefined
 }
 foo3()
+
+var foo4 = {
+    timeout: function () {
+        var outter_this = this
+        setTimeout(function () {
+            var inner_this = this
+            console.log("======== foo4.timeout()")
+            console.log(outter_this == foo4, "outter_this == foo4") //true 'outter_this == foo4'
+            //node中inner_this为Timeout
+            //浏览器中inner_this为Window
+            console.log(inner_this == foo4, "inner_this == foo4") //false 'inner_this == foo4'。 
+        }, 100)
+    }
+}
+//根据原则1.普通函数下的this为宿主对象
+//foo4对象定义了timeout方法，是它的宿主对象，即this == foo4
+//window(浏览器环境)/Timeout(node环境)对象定义了setTimeout，是它的宿主对象，即this == window/Timeout
+foo4.timeout()
