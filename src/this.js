@@ -5,7 +5,7 @@
  */
 function foo1() {
     console.log("======== foo1")
-    // 在普通函数中的this总是定义该函数的对象
+    // 在普通函数中的this总是代表它的直接调用者
     // 在默认情况下，this指的是window(浏览器环境)/global(node环境)
     console.log(this == global, "this == global") //true
 }
@@ -39,7 +39,7 @@ foo2()
 function foo3() {
     'use strict'
     console.log("======== foo3 - foo1的严格模式版本")
-    //结果与foo1()不同，因为严格来讲，foo3方法并没有定义在global/window对象中，不符合原则1.普通函数下的this为定义该函数的对象
+    //结果与foo1()不同，因为严格来讲，foo3方法并没有直接被global/window对象调用，不符合原则1.普通函数下的this总是代表它的直接调用者
     console.log(this == undefined, "this == undefined") //undefined
 }
 foo3()
@@ -57,14 +57,15 @@ var foo4 = {
         }, 100)
     }
 }
-//根据原则1.普通函数下的this为定义该函数的对象
-//foo4对象定义了timeout方法，定义该函数的对象，即this == foo4
-//window(浏览器环境)/Timeout(node环境)对象定义了setTimeout，是定义该函数的对象，即this == window/Timeout
+//根据原则1.普通函数下的this总是代表它的直接调用者
+//foo4.timeout()时foo4就是直接调用者，所以this == foo4
+//window(浏览器环境)/Timeout(node环境)对象直接调用了setTimeout，是该函数的直接调用者，所以inner_this == window/Timeout
 foo4.timeout()
 
 /**
- * 箭头表达式函数没有自己的this，它的this默认指向定义了该箭头表达式函数的函数它的this对象
- * 本例中，bar1定义了该箭头表达式函数，而bar函数为全局函数，在非严格模式下它的this为window/global
+ * 根据原则2. 箭头函数中的this默认指向定义了该箭头函数的函数它的this对象
+ * 本例中，bar1定义了该箭头函数，而bar1函数为全局函数，在非严格模式下它的this为window/global。
+ * 所以this = window/global
  */
 function bar1() {
     console.log("======== bar1")
@@ -86,8 +87,10 @@ function bar2() {
     'use strict'
     console.log("======== bar2 - bar1的严格模式版本")
     var f1 = () => {
-        //true 'this == undefined'，因为严格来讲，bar2方法并没有定义在任何对象中
-        //根据原则1.普通函数下的this为定义该函数的对象，this应该为undefined
+        //true 'this == undefined'
+        //根据原则2. 箭头函数中的this默认指向定义了该箭头函数的函数它的this对象
+        //本例中，bar2定义了该箭头函数，而bar2函数为全局函数，
+        //根据原则1.普通函数下的this总是代表它的直接调用者，在严格模式下bar2并没有直接调用者，所以this == undefined。
         console.log(this == undefined, "this == undefined")
     }
     f1(); //;不能省略，否则编译器认为f1()与下面的表达式一起构成完整的表达式。
@@ -98,7 +101,13 @@ function bar2() {
 }
 bar2()
 
-//对照foo4
+/**
+ * 对照foo4
+ * 根据原则2. 箭头函数中的this默认指向定义了该箭头函数的函数它的this对象
+ * 本例中，timeout函数定义了该箭头函数，所以inner_this == outter_this,
+ * 又因为timeout函数的直接调用者为bar3对象，即outter_this == bar3。
+ * 最终有inner_this == outter_this == bar3
+ */
 var bar3 = {
     timeout: function () {
         var outter_this = this
@@ -117,8 +126,11 @@ bar3.timeout()
  * 箭头函数的嵌套
  */
 var bar4 = {
-    //根据原则3.在对象的定义中定义的箭头函数，箭头函数的this为该对象的宿主对象。
-    //这里定义了箭头函数的对象为bar4，而bar4的宿主对象在浏览器中为window对象，在node中为空对象{}
+    // 根据bar3案例的解析，可知inner_this == outter_this。
+    // 根据原则2.箭头函数中的this默认指向定义了该箭头函数的函数它的this对象
+    // 比较特别的是定义了外层箭头函数的不是一个函数，而是一个对象bar4。
+    // 根据原则3.在对象的定义中定义的箭头函数，箭头函数的this为该对象的宿主对象
+    // 这里bar4的宿主对象为window/global（nodejs环境下实际打印outter_this输出了{}，不明原因）
     timeout: () => { //<<<<<<<<<<<<<<与foo3的不同点
         var outter_this = this
         setTimeout(() => {
@@ -127,9 +139,71 @@ var bar4 = {
             console.log(outter_this == global, "outter_this == global") //false 'outter_this == global'
             console.log(inner_this == global, "inner_this == global") //false 'inner_this == global'。
             console.log(inner_this == outter_this, "inner_this == outter_this") //true 'inner_this == outter_this'
-            console.log("outter_this =", outter_this)
-            console.log("inner_this =", inner_this)
+            console.log("outter_this =", outter_this) //{}
+            console.log("inner_this =", inner_this) //{}
         }, 100)
     }
 }
 bar4.timeout()
+
+//TODO 为什么在node环境下bar4中执行console.log(outter_this)输出的是 {}，而在这里outter_this == global？
+// 在浏览器环境下bar4与bar4_wrapper表现一致，outter_this == inner_this == window
+var bar4_wrapper = function () {
+    var bar4 = {
+        // 根据bar3案例的解析，可知inner_this == outter_this。
+        // 根据原则2.箭头函数中的this默认指向定义了该箭头函数的函数它的this对象
+        // 比较特别的是定义了外层箭头函数的不是一个函数，而是一个对象bar4。
+        // 根据原则3.在对象的定义中定义的箭头函数，箭头函数的this为该对象的宿主对象
+        // 这里bar4为该对象，当它定义它的宿主对象为window/global
+        timeout: () => { //<<<<<<<<<<<<<<与foo3的不同点
+            var outter_this = this
+            setTimeout(() => {
+                var inner_this = this
+                console.log("bar4_wrapper======== bar4.timeout()")
+                console.log(outter_this == global, "outter_this == global") //true 'outter_this == global'
+                console.log(inner_this == global, "inner_this == global") //true 'inner_this == global'
+                console.log(inner_this == outter_this, "inner_this == outter_this") //true 'inner_this == outter_this'
+            }, 100)
+        }
+    }
+    bar4.timeout()
+}
+
+bar4_wrapper()
+
+/**
+ * 根据原则1. 普通函数下的this总是代表它的直接调用者
+ * bar5中f1函数内的outter_this和inner_this指代问题可以简化为
+ *  var f1 = function () {
+ *      var outter_this = this
+ *      setTimeout(() => {
+ *          var inner_this = this
+ *          console.log("======== bar5.timeout()")
+ *          console.log(inner_this == global, "inner_this == global") //true 'inner_this == global'
+ *          console.log(outter_this == global, "outter_this == global") //true 'outter_this == global'
+ *          console.log(inner_this == outter_this, "inner_this == outter_this") //true 'inner_this == outter_this'
+ *      }, 100)
+ *  }
+ *  f1()
+ *  this的取值根据是否处于严格模式分两种情况:
+ *  1) 在非严格模式下，f1函数没有直接调用者，此时f1的this(outter_this)指代window/global。
+ *     再根据原则2，箭头函数的this总是定义该箭头函数的函数的this。这里即f1的this对象，所以outter_this = inner_this = window/global
+ *  2) 在严格模式下，f1函数没有直接调用者，this是undefined。
+ *     再根据原则2，箭头函数的this总是定义该箭头函数的函数的this。这里即f1的this对象，所以outter_this = inner_this = undefined
+ */
+var bar5 = {
+    timeout: function () {
+        var f1 = function () {
+            var outter_this = this
+            setTimeout(() => {
+                var inner_this = this
+                console.log("======== bar5.timeout()")
+                console.log(inner_this == global, "inner_this == global") //true 'inner_this == global'
+                console.log(outter_this == global, "outter_this == global") //true 'outter_this == global'
+                console.log(inner_this == outter_this, "inner_this == outter_this") //true 'inner_this == outter_this'
+            }, 100)
+        }
+        f1()
+    }
+}
+bar5.timeout()
