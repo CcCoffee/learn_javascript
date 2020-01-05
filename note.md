@@ -1,7 +1,7 @@
 # this的使用
 ## 箭头函数中的this和普通函数中的this对比
-1. 普通函数下的this为宿主对象:
-   * 在普通函数中的this总是代表定义该函数的宿主对象，在默认情况下，this指的是window/global
+1. 普通函数下的this为定义该函数的对象:
+   * 在普通函数中的this总是代表定义该函数的对象，在默认情况下，this指的是window/global
    * 在严格模式下,没有直接调用者的函数中的this是 undefined使用
    * call,apply,bind(ES5新增)绑定的,this指的是 绑定的对象
 2. 箭头函数中的this为宿主对象:

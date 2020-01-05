@@ -5,7 +5,7 @@
  */
 function foo1() {
     console.log("======== foo1")
-    // 在普通函数中的this总是代表它的直接调用者
+    // 在普通函数中的this总是定义该函数的对象
     // 在默认情况下，this指的是window(浏览器环境)/global(node环境)
     console.log(this == global, "this == global") //true
 }
@@ -25,7 +25,7 @@ function foo2() {
         //node中输出   false 'inner_this == global'。inner_this为Timeout对象
         //浏览器中输出  true "inner_this == window"
         console.log(inner_this == global, "inner_this == global") //false
-        console.log(outter_this == inner_this, "outter_this == inner_this") //false
+        console.log(outter_this == global, "outter_this == global") //true
         // console.log(inner_this) //Timeout {...}
     }, 100)
 }
@@ -38,9 +38,9 @@ foo2()
  */
 function foo3() {
     'use strict'
-    console.log("======== foo3")
-    //结果与foo1()不同，因为严格来讲，foo3方法并没有定义在global/window对象中，不符合原则1.普通函数下的this为宿主对象
-    console.log(this) //undefined
+    console.log("======== foo3 - foo1的严格模式版本")
+    //结果与foo1()不同，因为严格来讲，foo3方法并没有定义在global/window对象中，不符合原则1.普通函数下的this为定义该函数的对象
+    console.log(this == undefined, "this == undefined") //undefined
 }
 foo3()
 
@@ -57,7 +57,43 @@ var foo4 = {
         }, 100)
     }
 }
-//根据原则1.普通函数下的this为宿主对象
-//foo4对象定义了timeout方法，是它的宿主对象，即this == foo4
-//window(浏览器环境)/Timeout(node环境)对象定义了setTimeout，是它的宿主对象，即this == window/Timeout
+//根据原则1.普通函数下的this为定义该函数的对象
+//foo4对象定义了timeout方法，定义该函数的对象，即this == foo4
+//window(浏览器环境)/Timeout(node环境)对象定义了setTimeout，是定义该函数的对象，即this == window/Timeout
 foo4.timeout()
+
+/**
+ * 箭头表达式函数没有自己的this，它的this默认指向定义了该箭头表达式函数的函数它的this对象
+ * 本例中，bar1定义了该箭头表达式函数，而bar函数为全局函数，在非严格模式下它的this为window/global
+ */
+function bar1() {
+    console.log("======== bar1")
+    var f1 = () => {
+        console.log(this == global, "this == global") //true 'this == global'
+    }
+    f1(); //;不能省略，否则编译器认为f1()与下面的表达式一起构成完整的表达式。
+    //可简写为立即执行函数表达式（IIFE）
+    (() => {
+        console.log(this == global, "this == global") //true 'this == global'
+    })()
+}
+bar1()
+
+/**
+ * bar1的严格模式版本
+ */
+function bar2() {
+    'use strict'
+    console.log("======== bar2 - bar1的严格模式版本")
+    var f1 = () => {
+        //true 'this == undefined'，因为严格来讲，bar2方法并没有定义在任何对象中
+        //根据原则1.普通函数下的this为定义该函数的对象，this应该为undefined
+        console.log(this == undefined, "this == undefined")
+    }
+    f1(); //;不能省略，否则编译器认为f1()与下面的表达式一起构成完整的表达式。
+    //可简写为立即执行函数表达式（IIFE）
+    (() => {
+        console.log(this == undefined, "this == undefined") //true 'this == undefined'
+    })()
+}
+bar2()
