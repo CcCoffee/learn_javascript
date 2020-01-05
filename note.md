@@ -6,6 +6,7 @@
    * call,apply,bind(ES5新增)绑定的,this指的是 绑定的对象
 2. 箭头函数中的this默认指向定义了该箭头函数的函数它的this对象:
    * 箭头函数没有自己的this, 它的this是继承而来; 箭头表达式函数没有自己的this，它的this默认指向定义了该箭头函数的函数它的this对象
+3. 在对象的定义中定义的箭头函数，箭头函数的this为该对象的宿主对象
 ## node环境与broswer环境的区别
 1. 非严格模式下全局环境/全局函数中this的指向
    * node中this指向global

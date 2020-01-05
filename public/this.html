@@ -105,6 +105,44 @@
             })()
         }
         bar2()
+
+        //对照foo4
+        var bar3 = {
+            timeout: function () {
+                var outter_this = this
+                setTimeout(() => {
+                    var inner_this = this
+                    console.log("======== bar3.timeout()")
+                    console.log(outter_this == bar3, "outter_this == bar3") //true 'outter_this == bar3'
+                    console.log(inner_this == bar3, "inner_this == bar3") //true 'inner_this == bar3'。
+                    console.log(inner_this == outter_this,
+                        "inner_this == outter_this") //true "inner_this == outter_this"
+                }, 100)
+            }
+        }
+        bar3.timeout()
+
+        /**
+         * 箭头函数的嵌套
+         */
+        var bar4 = {
+            //根据原则3.在对象的定义中定义的箭头函数，箭头函数的this为该对象的宿主对象。
+            //这里定义了箭头函数的对象为bar4，而bar4的宿主对象在浏览器中为window对象，在node中为空对象{}
+            timeout: () => { //<<<<<<<<<<<<<<与foo3的不同点
+                var outter_this = this
+                setTimeout(() => {
+                    var inner_this = this
+                    console.log("======== bar4.timeout()")
+                    console.log(outter_this == window,
+                        "outter_this == window") //true 'outter_this == window'
+                    console.log(inner_this == window,
+                        "inner_this == window") //true 'inner_this == window'。
+                    console.log(inner_this == outter_this,
+                        "inner_this == outter_this") //true 'inner_this == outter_this'
+                }, 100)
+            }
+        }
+        bar4.timeout()
     </script>
 </body>
 
