@@ -207,3 +207,72 @@ var bar5 = {
     }
 }
 bar5.timeout()
+
+/**
+ * <h4>react中需要在构造函数中显示bind绑定的原因</h4>
+ * react中使用以下方式定义事件响应方法handleInputChange
+ * <input type="text" value={this.state.inputText} onChange={this.handleInputChange} id="todoItem" />
+ * 
+ * 当handleInputChange中要使用this时会发生异常：this为undifined
+ * handleInputChange(e) {
+ *     let inputText = e.target.value
+ *     console.log("this = ", this)
+ *     this.setState(state => ({
+ *         inputText
+ *     }))
+ * }
+ *  
+ * this的辨别原则1. 普通函数（非箭头函数）中，this总是指向函数的直接调用者
+ *      这里handleInputChange函数想必是通过todoApp.handleInputChange(e)的方式调用（其中todoApp为TodoApp的一个实例对象）。
+ *      这样直接调用者当然就是todoApp对象，也就是说this指向了定义有handleInputChange函数的todoApp对象！
+ *      但是执行时却报错了，难道this的辨别原则1出现了问题？！！！
+ *      答案来自官方文档https://zh-hans.reactjs.org/docs/faq-functions.html#why-is-binding-necessary-at-all
+ *      >
+ *      在JavaScript中，以下两种写法是不等价的：
+ *      1) 直接调用方式
+ *      obj.method();
+ *      2) 传递后调用方式
+ *      var method = obj.method;
+ *      method();
+ *      bind 方法确保了第二种写法与第一种写法相同。
+ *      使用 React，通常只需要绑定传递给其他组件的方法。例如，<button onClick={this.handleClick}> 
+ *      是在传递 this.handleClick ，所以需要绑定它。但是，没有必要绑定 render 方法或生命周期方法：
+ *      我们并没有将它们传递给其他的组件。
+ *
+ *      翻译成白话文：React在传递事件处理函数给组件（如input组件)时采用的是方式2. 传递后调用方式
+ *      根据this的分辨原则1我们知道method()并没有调用者
+ *          1) 在js的非严格模式下：
+ *          node环境中this取为global对象，浏览器环境中this为window对象
+ *          2) 在js的严格模式下：
+ *          由于method()并没有调用者，this自然就为undefined了
+ *
+ *      注意：react环境中的input与dom中的input不同，它在typescript中定义的类型为
+ *      React.DetailedHTMLProps<React.InputHTMLAttributes<HTMLInputElement>, 
+ *      HTMLInputElement>
+ *      
+ *      结论:
+ *      1. this的分辨原则1依然是正确的
+ *      2. react采取的传递后调用方式事实上函数中无法获取函数对象，这里为TodoApp的一个实例，
+ *         而获取实例中的其他方法和属性又是极为常见的需求。React框架必须给出解决方案——这就是
+ *         在class对象的构造方法中通过bind方法显示绑定this
+ *         
+ *      解决方案:
+ *      this.handleInputChange = this.handleInputChange.bind(this)
+ */
+console.log("======== var method = obj.method")
+var obj = {
+    method: function () {
+        console.log(this == obj, "this == obj")
+        console.log(this == global, "this == global")
+    }
+}
+var method = obj.method;
+console.log("> obj.method()")
+//console.log(this == obj, "this == obj") 结果: true 'this == obj'
+//console.log(this == global, "this == global") 结果: false 'this == global'
+obj.method()
+
+console.log("> method()")
+//console.log(this == obj, "this == obj") 结果: false 'this == obj'
+//console.log(this == global, "this == global") 结果: true 'this == global'
+method()
